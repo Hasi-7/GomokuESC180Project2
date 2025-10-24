@@ -9,6 +9,7 @@ This is a placeholder that you should remove once you modify the function.
 Author(s): Michael Guerzhoy with tests contributed by Siavash Kazemian.  Last modified: Oct. 16, 2025
 """
 print("hello")
+# Hi Samantha
 def is_empty(board):
     pass
     
