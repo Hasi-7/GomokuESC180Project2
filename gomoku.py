@@ -10,6 +10,7 @@ Author(s): Michael Guerzhoy with tests contributed by Siavash Kazemian.  Last mo
 """
 print("hello")
 # Hi Samantha
+#Test 
 def is_empty(board):
     pass
     
