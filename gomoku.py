@@ -1,16 +1,9 @@
-"""Gomoku starter code
-You should complete every incomplete function,
-and add more functions and variables as needed.
-
-Note that incomplete functions have 'pass' as the first statement:
-pass is a Python keyword; it is a statement that does nothing.
-This is a placeholder that you should remove once you modify the function.
-
-Author(s): Michael Guerzhoy with tests contributed by Siavash Kazemian.  Last modified: Oct. 16, 2025
+"""
+Gomoku AI Engine
+Author(s): Samantha Chang and Hasnain Heryani
 """
 def is_empty(board):
     pass
-    
     
 def is_bounded(board, y_end, x_end, length, d_y, d_x):
     pass
@@ -38,8 +31,7 @@ def score(board):
     
     for i in range(2, 6):
         open_b[i], semi_open_b[i] = detect_rows(board, "b", i)
-        open_w[i], semi_open_w[i] = detect_rows(board, "w", i)
-        
+        open_w[i], semi_open_w[i] = detect_rows(board, "w", i)      
     
     if open_b[5] >= 1 or semi_open_b[5] >= 1:
         return MAX_SCORE
@@ -55,7 +47,6 @@ def score(board):
             50   * open_b[3]                     + 
             10   * semi_open_b[3]                +  
             open_b[2] + semi_open_b[2] - open_w[2] - semi_open_w[2])
-
     
 def is_win(board):
     who_won = is_seq_complete(board, "w", 1, 1, 1, 5)
@@ -79,16 +70,13 @@ def print_board(board):
         s += "*\n"
     s += (len(board[0])*2 + 1)*"*"
     
-    print(s)
-    
+    print(s) 
 
 def make_empty_board(sz):
     board = []
     for i in range(sz):
         board.append([" "]*sz)
     return board
-                
-
 
 def analysis(board):
     for c, full_name in [["b", "Black"], ["w", "White"]]:
@@ -98,11 +86,6 @@ def analysis(board):
             print("Open rows of length %d: %d" % (i, open))
             print("Semi-open rows of length %d: %d" % (i, semi_open))
         
-    
-    
-
-        
-    
 def play_gomoku(board_size):
     board = make_empty_board(board_size)
     board_height = len(board)
