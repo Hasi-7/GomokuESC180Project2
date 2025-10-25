@@ -2,13 +2,92 @@
 Gomoku AI Engine
 Author(s): Samantha Chang and Hasnain Heryani
 """
+
+# is_empty():
+# Paraneters:
+# board: The game board
+# Check if the entire board is empty meaning no 'w' or 'b' in the board
+# Returns True if the baord is empty
+# Otherwise returns False
 def is_empty(board):
-    pass
+    for i in range(len(board)):
+        for j in range(len(board[i])):
+            if board[i][j] != ' ':
+                return False
+    return True
     
+# is_bounded():
+# Parameters:
+# board: The game board
+# y_end: The end y coordinate of the sequence
+# x_end: The end x coodrinate of the sequence
+# length: The length of the sequence
+# (d_y, d_x): The Direction of the sequence
 def is_bounded(board, y_end, x_end, length, d_y, d_x):
-    pass
-    
+    # Gets the side length of the baord
+    board_size = len(board)-1
+    x_start = (x_end - (length-1)) * d_x
+    y_start = (y_end - (length-1)) * d_y
+    # Case  1: Sequence is horizontal
+    if (x_end != length - 1 and board[y_start - d_y][x_start - d_x] == ' '):
+        return "SEMIOPEN"
+    elif (x_end != length - 1 and board[y_start - d_y][x_start - d_x]) == ' ' and (x_end != board_size and board[y_end + d_y][x_end + d_x] == ' '):
+        return "OPEN"
+    elif (x_end != length - 1 and board[y_start - d_y][x_start - d_x] == ' ') or (x_end != board_size and board[y_end + d_y][x_end + d_x] == ' '):
+        return "SEMIOPEN"
+    else:
+        return "CLOSED"
+    # if d_y == 0 and d_x == 1:
+    #     if (x_end != length - 1 and board[y_end][x_end - length - 1] == ' '):
+    #         return "SEMIOPEN"
+    #     elif (x_end != length - 1 and board[y_end][x_end - length - 1]) == ' ' and (x_end != board_size and board[y_end][x_end + 1] == ' '):
+    #         return "OPEN"
+    #     elif (x_end != length - 1 and board[y_end][x_end - length - 1] == ' ') or (x_end != board_size and board[y_end][x_end + 1] == ' '):
+    #         return "SEMIOPEN"
+    #     else:
+    #         return "CLOSED"
+    # elif d_y == 1 and d_x == 0:
+    #     if (y_end != length - 1 and board[y_end - length - 1][x_end] == ' '):
+    #         return "SEMIOPEN"
+    #     elif (y_end != length - 1 and board[y_end - length - 1][x_end]) == ' ' and (y_end != board_size and board[y_end + 1][x_end] == ' '):
+    #         return "OPEN"
+    #     elif (y_end != length - 1 and board[y_end - length - 1][x_end] == ' ') or (y_end != board_size and board[y_end + 1][x_end] == ' '):
+    #         return "SEMIOPEN"
+    #     else:
+    #         return "CLOSED"
+    # elif d_y == 1 and (d_x == 1 or d_x == -1):
+    #     if (y_end != length - 1 and x_end != length - 1 and board[y_end - length - 1][x_end - length - 1] == ' '):
+    #         return "SEMIOPEN"
+    #     elif (y_end != length - 1 and x_end != length - 1 and board[y_end - length - 1][x_end - length - 1] == ' ') and (y_end != board_size and x_end != board_size and board[y_end + 1][x_end + 1] == ' '):
+    #         return "OPEN"
+    #     elif (y_end != length - 1 and x_end != length - 1 and  board[y_end - length - 1][x_end - length - 1] == ' ') or (y_end != board_size and x_end != board_size and board[y_end + 1][x_end + 1] == ' '):
+    #         return "SEMIOPEN"
+    #     else:
+    #         return "CLOSED"
+        
+        
 def detect_row(board, col, y_start, x_start, length, d_y, d_x):
+    count = 0
+    open_seq_count = 0
+    semi_open_seq_count = 0
+    for i in range(y_start, (len(board)-1)*d_y, d_y):
+        for j in range(x_start, (len(board)-1)*d_x, d_x):
+            if board[i][j] == col:
+                count += 1
+            if count == length and i != (len(board)-1) and j != (len(board[i])-1) and board[i+d_y][j+d_x] == ' ':
+                if is_bounded(board, i, j, length, d_y, d_x) == "OPEN":
+                    open_seq_count += 1
+                    count = 0
+                elif is_bounded(board, i, j, length, d_y, d_x) == "SEMIOPEN":
+                    semi_open_seq_count += 1
+                    count = 0
+            elif count == length:
+                if is_bounded(board, i, j, length, d_y, d_x) == "OPEN":
+                    open_seq_count += 1
+                    count = 0
+                elif is_bounded(board, i, j, length, d_y, d_x) == "SEMIOPEN":
+                    semi_open_seq_count += 1
+                    count = 0
     return open_seq_count, semi_open_seq_count
     
 def detect_rows(board, col, length):
@@ -18,7 +97,8 @@ def detect_rows(board, col, length):
     
 def search_max(board):
     move_y = 0
-    move_x = 2
+    move_x = 0
+    
     return move_y, move_x
     
 def score(board):
