@@ -157,9 +157,19 @@ def detect_rows(board, col, length):
             semi_open_seq_count += count2
     return open_seq_count, semi_open_seq_count
     
-def search_max(board):
-    
-    
+def search_max(board):    
+    best_score = 0
+    move_y, move_x = None, None
+    for y in range(len(board)):
+        for x in range(len(board[0])):
+            if board[y][x] == ' ': # Try empty cells only''
+                board[y][x] = 'b'
+                current_score = score(board)
+                board[y][x] = ' ' # Removes the move
+                # Best move
+                if current_score > best_score:
+                    best_score = current_score
+                    move_y, move_x = y, x 
     return move_y, move_x
     
 def score(board):
