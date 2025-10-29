@@ -74,7 +74,28 @@ def detect_row(board, col, y_start, x_start, length, d_y, d_x):
     x_anti_diagonal_bound_multiplier = 1
     if d_x == -1:
         x_anti_diagonal_bound_multiplier = 0
-    while (d_x == 0 and i < len(board)-1) or (d_y == 0 and j < len(board)-1) or (d_x > 0 and d_y > 0 and j < len(board)-1 and i < len(board)-1) or (d_y > 0 and d_x < 0 and j >= 0 and i < len(board)-1):
+    while (d_x == 0 and i < len(board)-1) or (d_y == 0 and j < len(board)-1) or (d_x > 0 and d_y > 0 and j < len(board)-1 and i < len(board)-1):
+        if board[i][j] == col:
+            count += 1
+        else:
+            count = 0
+        if count == length and (i != (len(board)-1)*d_y or j != ((len(board)-1)) and board[i+d_y][j+d_x] == ' '):
+            bound = is_bounded(board, i, j, length, d_y, d_x)
+            if bound == "OPEN":
+                open_seq_count += 1
+            elif bound == "SEMIOPEN":
+                semi_open_seq_count += 1
+            count = 0
+        elif count == length and (i == (len(board)-1) or j == (len(board)-1)):
+            bound = is_bounded(board, i, j, length, d_y, d_x)
+            if bound == "SEMIOPEN":
+                semi_open_seq_count += 1
+            count = 0
+        if count > length:
+            count = 0
+        i += d_y
+        j += d_x
+    while (d_y > 0 and d_x < 0 and j >= 0 and i < len(board)-1):
         if board[i][j] == col:
             count += 1
         else:
@@ -98,8 +119,11 @@ def detect_row(board, col, y_start, x_start, length, d_y, d_x):
     return open_seq_count, semi_open_seq_count
     
 def detect_rows(board, col, length):
-    ####CHANGE ME
     open_seq_count, semi_open_seq_count = 0, 0
+    for y_start in range(len(board)):
+
+
+
     return open_seq_count, semi_open_seq_count
     
 def search_max(board):
