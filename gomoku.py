@@ -71,15 +71,12 @@ def detect_row(board, col, y_start, x_start, length, d_y, d_x):
     semi_open_seq_count = 0
     i = y_start
     j = x_start
-    x_anti_diagonal_bound_multiplier = 1
-    if d_x == -1:
-        x_anti_diagonal_bound_multiplier = 0
     while (d_x == 0 and i < len(board)-1) or (d_y == 0 and j < len(board)-1) or (d_x > 0 and d_y > 0 and j < len(board)-1 and i < len(board)-1):
         if board[i][j] == col:
             count += 1
         else:
             count = 0
-        if count == length and (i != (len(board)-1)*d_y or j != ((len(board)-1)) and board[i+d_y][j+d_x] == ' '):
+        if count == length and ((i != (len(board)-1)*d_y or j != ((len(board)-1))) and board[i+d_y][j+d_x] == ' '):
             bound = is_bounded(board, i, j, length, d_y, d_x)
             if bound == "OPEN":
                 open_seq_count += 1
@@ -95,19 +92,21 @@ def detect_row(board, col, y_start, x_start, length, d_y, d_x):
             count = 0
         i += d_y
         j += d_x
+    # d_y = 1
+    # d_x = -1
     while (d_y > 0 and d_x < 0 and j >= 0 and i < len(board)-1):
         if board[i][j] == col:
             count += 1
         else:
             count = 0
-        if count == length and (i != (len(board)-1)*d_y or j != ((len(board)-1)*x_anti_diagonal_bound_multiplier) and board[i+d_y][j+d_x] == ' '):
+        if count == length and ((i != (len(board)-1) or j != 0) and board[i+d_y][j+d_x] == ' '):
             bound = is_bounded(board, i, j, length, d_y, d_x)
             if bound == "OPEN":
                 open_seq_count += 1
             elif bound == "SEMIOPEN":
                 semi_open_seq_count += 1
             count = 0
-        elif count == length and (i == (len(board)-1) or j == (len(board)-1)*x_anti_diagonal_bound_multiplier):
+        elif count == length and (i == (len(board)-1) or j == 0):
             bound = is_bounded(board, i, j, length, d_y, d_x)
             if bound == "SEMIOPEN":
                 semi_open_seq_count += 1
@@ -120,15 +119,34 @@ def detect_row(board, col, y_start, x_start, length, d_y, d_x):
     
 def detect_rows(board, col, length):
     open_seq_count, semi_open_seq_count = 0, 0
-    for y_start in range(len(board)):
-
-
-
+    #Case 1: Every Row Left To Right (0, 1)
+    for y_start in range(len(board)-1):
+        x_start = 0
+        open_seq_count, semi_open_seq_count += detect_row(board, col, y_start, x_start, length, 0, 1)
+    #Case 2: Every Column Top To Bottom (1, 0)
+    for x_start in range(len(board)):
+        y_start = 0
+        open_seq_count, semi_open_seq_count += detect_row(board, col, y_start, x_start, length, 1, 0)
+    #Case 3: Every Diagonal From Top Left to Bottom Right (1, 1)
+    for y_start in range(len(board)-1):
+        if (y_start == 0):
+            for x_start in range(len(board)-1):
+                open_seq_count, semi_open_seq_count += detect_row(board, col, y_start, x_start, length, 1, 1)
+        else:
+            x_start = 0
+            open_seq_count, semi_open_seq_count += detect_row(board, col, y_start, x_start, length, 1, 1)
+    #Case 4: Every Diagonal From Top Right to Bottom Left (1, -1)
+    for y_start in range(len(board)-1):
+        if (y_start == 0):
+            for x_start in range(len(board)-1):
+                open_seq_count, semi_open_seq_count += detect_row(board, col, y_start, x_start, length, 1, -1)
+        else:
+            x_start = 7
+            open_seq_count, semi_open_seq_count += detect_row(board, col, y_start, x_start, length, 1,-1)
     return open_seq_count, semi_open_seq_count
     
 def search_max(board):
-    move_y = 0
-    move_x = 0
+    
     
     return move_y, move_x
     
@@ -226,7 +244,7 @@ def play_gomoku(board_size):
         print_board(board)
         analysis(board)
 
-        print("open sequences and semi open sequences:", detect_row(board, 'w', 0, 0, 3, 0, 1))
+        print("open sequences and semi open sequences:", detect_row(board, 'w', 2, 7, 3, 1, -1))
         
         game_res = is_win(board)
         if game_res in ["White won", "Black won", "Draw"]:
