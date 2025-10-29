@@ -65,29 +65,36 @@ def is_bounded(board, y_end, x_end, length, d_y, d_x):
     #     else:
     #         return "CLOSED"
         
-        
 def detect_row(board, col, y_start, x_start, length, d_y, d_x):
     count = 0
     open_seq_count = 0
     semi_open_seq_count = 0
-    for i in range(y_start, (len(board)-1)*d_y, d_y):
-        for j in range(x_start, (len(board)-1)*d_x, d_x):
-            if board[i][j] == col:
-                count += 1
-            if count == length and i != (len(board)-1) and j != (len(board[i])-1) and board[i+d_y][j+d_x] == ' ':
-                if is_bounded(board, i, j, length, d_y, d_x) == "OPEN":
-                    open_seq_count += 1
-                    count = 0
-                elif is_bounded(board, i, j, length, d_y, d_x) == "SEMIOPEN":
-                    semi_open_seq_count += 1
-                    count = 0
-            elif count == length:
-                if is_bounded(board, i, j, length, d_y, d_x) == "OPEN":
-                    open_seq_count += 1
-                    count = 0
-                elif is_bounded(board, i, j, length, d_y, d_x) == "SEMIOPEN":
-                    semi_open_seq_count += 1
-                    count = 0
+    i = y_start
+    j = x_start
+    x_anti_diagonal_bound_multiplier = 1
+    if d_x == -1:
+        x_anti_diagonal_bound_multiplier = 0
+    while (d_x == 0 and i < len(board)-1) or (d_y == 0 and j < len(board)-1) or (d_x > 0 and d_y > 0 and j < len(board)-1 and i < len(board)-1) or (d_y > 0 and d_x < 0 and j >= 0 and i < len(board)-1):
+        if board[i][j] == col:
+            count += 1
+        else:
+            count = 0
+        if count == length and (i != (len(board)-1)*d_y or j != ((len(board)-1)*x_anti_diagonal_bound_multiplier) and board[i+d_y][j+d_x] == ' '):
+            bound = is_bounded(board, i, j, length, d_y, d_x)
+            if bound == "OPEN":
+                open_seq_count += 1
+            elif bound == "SEMIOPEN":
+                semi_open_seq_count += 1
+            count = 0
+        elif count == length and (i == (len(board)-1) or j == (len(board)-1)*x_anti_diagonal_bound_multiplier):
+            bound = is_bounded(board, i, j, length, d_y, d_x)
+            if bound == "SEMIOPEN":
+                semi_open_seq_count += 1
+            count = 0
+        if count > length:
+            count = 0
+        i += d_y
+        j += d_x
     return open_seq_count, semi_open_seq_count
     
 def detect_rows(board, col, length):
@@ -194,6 +201,8 @@ def play_gomoku(board_size):
         board[move_y][move_x] = "w"
         print_board(board)
         analysis(board)
+
+        print("open sequences and semi open sequences:", detect_row(board, 'w', 0, 0, 3, 0, 1))
         
         game_res = is_win(board)
         if game_res in ["White won", "Black won", "Draw"]:
