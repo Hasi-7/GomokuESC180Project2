@@ -200,12 +200,19 @@ def score(board):
             open_b[2] + semi_open_b[2] - open_w[2] - semi_open_w[2])
     
 def is_win(board):
-    who_won = is_seq_complete(board, "w", 1, 1, 1, 5)
-    if who_won:
-        return "White won"
+    for c, full_name in [["b", "Black"], ["w", "White"]]:
+        open, semi_open = detect_rows(board, c, 5)
+        if open + semi_open >= 1:
+            return "%s won" % (full_name)
+    
+    for i in range(len(board)):
+        for j in range(len(board[0])):
+            if board[i][j] == ' ':
+                return "Continue playing"
+    
+    return "Draw"
 
 def print_board(board):
-    
     s = "*"
     for i in range(len(board[0])-1):
         s += str(i%10) + "|"
@@ -233,7 +240,7 @@ def analysis(board):
     for c, full_name in [["b", "Black"], ["w", "White"]]:
         print("%s stones" % (full_name))
         for i in range(2, 6):
-            open, semi_open = detect_rows(board, c, i);
+            open, semi_open = detect_rows(board, c, i)
             print("Open rows of length %d: %d" % (i, open))
             print("Semi-open rows of length %d: %d" % (i, semi_open))
         
@@ -266,8 +273,6 @@ def play_gomoku(board_size):
         print_board(board)
         analysis(board)
 
-        print("open sequences and semi open sequences:", detect_row(board, 'w', 0, 0, 5, 0, 1))
-        
         game_res = is_win(board)
         if game_res in ["White won", "Black won", "Draw"]:
             return game_res        
@@ -277,17 +282,6 @@ def put_seq_on_board(board, y, x, d_y, d_x, length, col):
         board[y][x] = col        
         y += d_y
         x += d_x
-
-def is_seq_complete(board, col, y_start, x_start, d_y, d_x):
-    count = 0
-    for i in range(y_start, y_start + d_y + 1):
-        count = 0
-        for j in range(x_start, x_start + d_x + 1):
-            if board[i][j] == col:
-                count += 1
-            if count == 5:
-                return True
-    return False
 
 def test_is_empty():
     board  = make_empty_board(8)
