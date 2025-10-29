@@ -122,27 +122,39 @@ def detect_rows(board, col, length):
     #Case 1: Every Row Left To Right (0, 1)
     for y_start in range(len(board)-1):
         x_start = 0
-        open_seq_count, semi_open_seq_count += detect_row(board, col, y_start, x_start, length, 0, 1)
+        count1, count2 = detect_row(board, col, y_start, x_start, length, 0, 1)
+        open_seq_count += count1
+        semi_open_seq_count += count2
     #Case 2: Every Column Top To Bottom (1, 0)
     for x_start in range(len(board)):
         y_start = 0
-        open_seq_count, semi_open_seq_count += detect_row(board, col, y_start, x_start, length, 1, 0)
+        count1, count2 = detect_row(board, col, y_start, x_start, length, 1, 0)
+        open_seq_count += count1
+        semi_open_seq_count += count2
     #Case 3: Every Diagonal From Top Left to Bottom Right (1, 1)
     for y_start in range(len(board)-1):
         if (y_start == 0):
             for x_start in range(len(board)-1):
-                open_seq_count, semi_open_seq_count += detect_row(board, col, y_start, x_start, length, 1, 1)
+                count1, count2 = detect_row(board, col, y_start, x_start, length, 1, 1)
+                open_seq_count += count1
+                semi_open_seq_count += count2
         else:
             x_start = 0
-            open_seq_count, semi_open_seq_count += detect_row(board, col, y_start, x_start, length, 1, 1)
+            count1, count2 = detect_row(board, col, y_start, x_start, length, 1, 1)
+            open_seq_count += count1
+            semi_open_seq_count += count2
     #Case 4: Every Diagonal From Top Right to Bottom Left (1, -1)
     for y_start in range(len(board)-1):
         if (y_start == 0):
             for x_start in range(len(board)-1):
-                open_seq_count, semi_open_seq_count += detect_row(board, col, y_start, x_start, length, 1, -1)
+                count1, count2 = detect_row(board, col, y_start, x_start, length, 1, -1)
+                open_seq_count += count1
+                semi_open_seq_count += count2
         else:
             x_start = 7
-            open_seq_count, semi_open_seq_count += detect_row(board, col, y_start, x_start, length, 1,-1)
+            count1, count2 = detect_row(board, col, y_start, x_start, length, 1,-1)
+            open_seq_count += count1
+            semi_open_seq_count += count2
     return open_seq_count, semi_open_seq_count
     
 def search_max(board):
@@ -244,7 +256,7 @@ def play_gomoku(board_size):
         print_board(board)
         analysis(board)
 
-        print("open sequences and semi open sequences:", detect_row(board, 'w', 2, 7, 3, 1, -1))
+        print("open sequences and semi open sequences:", detect_row(board, 'w', 0, 0, 5, 0, 1))
         
         game_res = is_win(board)
         if game_res in ["White won", "Black won", "Draw"]:
