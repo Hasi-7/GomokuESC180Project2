@@ -11,6 +11,7 @@ def is_bounded(board, y_end, x_end, length, d_y, d_x):
 def detect_row(board, col, y_start, x_start, length, d_y, d_x):
     return open_seq_count, semi_open_seq_count
     
+    
 def detect_rows(board, col, length):
     ####CHANGE ME
     open_seq_count, semi_open_seq_count = 0, 0
