@@ -24,16 +24,33 @@ def is_empty(board):
 # length: The length of the sequence
 # (d_y, d_x): The Direction of the sequence
 def is_bounded(board, y_end, x_end, length, d_y, d_x):
-    # Gets the side length of the baord
-    board_size = len(board)-1
-    x_start = (x_end - (length-1)) * d_x
-    y_start = (y_end - (length-1)) * d_y
-    # Case  1: Sequence is horizontal
-    if (x_end != length - 1 and board[y_start - d_y][x_start - d_x] == ' '):
-        return "SEMIOPEN"
-    elif (x_end != length - 1 and board[y_start - d_y][x_start - d_x]) == ' ' and (x_end != board_size and board[y_end + d_y][x_end + d_x] == ' '):
+    # Gets the side length of the board
+    board_size = len(board)
+    
+    # Calculate the start position correctly
+    x_start = x_end - (length - 1) * d_x
+    y_start = y_end - (length - 1) * d_y
+    
+    # Check the position before the start of the sequence
+    y_before = y_start - d_y
+    x_before = x_start - d_x
+    before_open = False
+    if 0 <= y_before < board_size and 0 <= x_before < board_size:
+        if board[y_before][x_before] == ' ':
+            before_open = True
+    
+    # Check the position after the end of the sequence
+    y_after = y_end + d_y
+    x_after = x_end + d_x
+    after_open = False
+    if 0 <= y_after < board_size and 0 <= x_after < board_size:
+        if board[y_after][x_after] == ' ':
+            after_open = True
+    
+    # Determine the type of sequence based on both ends
+    if before_open and after_open:
         return "OPEN"
-    elif (x_end != length - 1 and board[y_start - d_y][x_start - d_x] == ' ') or (x_end != board_size and board[y_end + d_y][x_end + d_x] == ' '):
+    elif before_open or after_open:
         return "SEMIOPEN"
     else:
         return "CLOSED"
@@ -464,4 +481,10 @@ def some_tests():
   
             
 if __name__ == '__main__':
-    print(play_gomoku(8))
+    test_is_empty()
+    test_is_bounded()
+    test_detect_row()
+    test_detect_rows()
+    test_search_max()
+    easy_testset_for_main_functions()
+    some_tests()    
