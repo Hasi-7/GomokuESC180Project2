@@ -88,89 +88,70 @@ def detect_row(board, col, y_start, x_start, length, d_y, d_x):
     semi_open_seq_count = 0
     i = y_start
     j = x_start
-    while (d_x == 0 and i < len(board)-1) or (d_y == 0 and j < len(board)-1) or (d_x > 0 and d_y > 0 and j < len(board)-1 and i < len(board)-1):
+    size = len(board)
+    while 0 <= i < size and 0 <= j < size:
         if board[i][j] == col:
             count += 1
         else:
+            # check if a sequence ends before
+            if count == length:
+                bound = is_bounded(board, i - d_y, j - d_x, length, d_y, d_x)
+                if bound == "OPEN":
+                    open_seq_count += 1
+                elif bound == "SEMIOPEN":
+                    semi_open_seq_count += 1
             count = 0
-        if count == length and ((i != (len(board)-1)*d_y or j != ((len(board)-1))) and board[i+d_y][j+d_x] == ' '):
-            bound = is_bounded(board, i, j, length, d_y, d_x)
-            if bound == "OPEN":
-                open_seq_count += 1
-            elif bound == "SEMIOPEN":
-                semi_open_seq_count += 1
-            count = 0
-        elif count == length and (i == (len(board)-1) or j == (len(board)-1)):
-            bound = is_bounded(board, i, j, length, d_y, d_x)
-            if bound == "SEMIOPEN":
-                semi_open_seq_count += 1
-            count = 0
-        if count > length:
-            count = 0
+        
+        if not (0 <= i + d_y < size and 0 <= j + d_x < size):
+            if count == length:
+                bound = is_bounded(board, i, j, length, d_y, d_x)
+                if bound == "OPEN":
+                    open_seq_count += 1
+                elif bound == "SEMIOPEN":
+                    semi_open_seq_count += 1
+            break
+
         i += d_y
         j += d_x
-    # d_y = 1
-    # d_x = -1
-    while (d_y > 0 and d_x < 0 and j >= 0 and i < len(board)-1):
-        if board[i][j] == col:
-            count += 1
-        else:
-            count = 0
-        if count == length and ((i != (len(board)-1) or j != 0) and board[i+d_y][j+d_x] == ' '):
-            bound = is_bounded(board, i, j, length, d_y, d_x)
-            if bound == "OPEN":
-                open_seq_count += 1
-            elif bound == "SEMIOPEN":
-                semi_open_seq_count += 1
-            count = 0
-        elif count == length and (i == (len(board)-1) or j == 0):
-            bound = is_bounded(board, i, j, length, d_y, d_x)
-            if bound == "SEMIOPEN":
-                semi_open_seq_count += 1
-            count = 0
-        if count > length:
-            count = 0
-        i += d_y
-        j += d_x
+    
     return open_seq_count, semi_open_seq_count
     
     
 def detect_rows(board, col, length):
     open_seq_count, semi_open_seq_count = 0, 0
+    size = len(board)
     #Case 1: Every Row Left To Right (0, 1)
-    for y_start in range(len(board)-1):
+    for y_start in range(size):
         x_start = 0
         count1, count2 = detect_row(board, col, y_start, x_start, length, 0, 1)
         open_seq_count += count1
         semi_open_seq_count += count2
     #Case 2: Every Column Top To Bottom (1, 0)
-    for x_start in range(len(board)):
+    for x_start in range(size):
         y_start = 0
         count1, count2 = detect_row(board, col, y_start, x_start, length, 1, 0)
         open_seq_count += count1
         semi_open_seq_count += count2
     #Case 3: Every Diagonal From Top Left to Bottom Right (1, 1)
-    for y_start in range(len(board)-1):
-        if (y_start == 0):
-            for x_start in range(len(board)-1):
-                count1, count2 = detect_row(board, col, y_start, x_start, length, 1, 1)
-                open_seq_count += count1
-                semi_open_seq_count += count2
-        else:
-            x_start = 0
-            count1, count2 = detect_row(board, col, y_start, x_start, length, 1, 1)
+    for x_start in range(size):
+        if(min(size, size - x_start) >= length):
+            count1, count2 = detect_row(board, col, 0, x_start, length, 1, 1)
+            open_seq_count += count1
+            semi_open_seq_count += count2
+    for y_start in range(1, size):
+        if (min(size - y_start, size) >= length):
+            count1, count2 = detect_row(board, col, y_start, 0, length, 1, 1)
             open_seq_count += count1
             semi_open_seq_count += count2
     #Case 4: Every Diagonal From Top Right to Bottom Left (1, -1)
-    for y_start in range(len(board)-1):
-        if (y_start == 0):
-            for x_start in range(len(board)-1):
-                count1, count2 = detect_row(board, col, y_start, x_start, length, 1, -1)
-                open_seq_count += count1
-                semi_open_seq_count += count2
-        else:
-            x_start = 7
-            count1, count2 = detect_row(board, col, y_start, x_start, length, 1,-1)
+    for x_start in range(size):
+        if (min(size, x_start + 1) >= length):
+            count1, count2 = detect_row(board, col, 0, x_start, length, 1, -1)
+            open_seq_count += count1
+            semi_open_seq_count += count2
+    for y_start in range(1, size):
+        if (min(size - y_start, size) >= length):
+            count1, count2 = detect_row(board, col, y_start, size - 1, length, 1, -1)
             open_seq_count += count1
             semi_open_seq_count += count2
     return open_seq_count, semi_open_seq_count
