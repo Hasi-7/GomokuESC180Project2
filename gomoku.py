@@ -54,116 +54,109 @@ def is_bounded(board, y_end, x_end, length, d_y, d_x):
         return "SEMIOPEN"
     else:
         return "CLOSED"
+    # if d_y == 0 and d_x == 1:
+    #     if (x_end != length - 1 and board[y_end][x_end - length - 1] == ' '):
+    #         return "SEMIOPEN"
+    #     elif (x_end != length - 1 and board[y_end][x_end - length - 1]) == ' ' and (x_end != board_size and board[y_end][x_end + 1] == ' '):
+    #         return "OPEN"
+    #     elif (x_end != length - 1 and board[y_end][x_end - length - 1] == ' ') or (x_end != board_size and board[y_end][x_end + 1] == ' '):
+    #         return "SEMIOPEN"
+    #     else:
+    #         return "CLOSED"
+    # elif d_y == 1 and d_x == 0:
+    #     if (y_end != length - 1 and board[y_end - length - 1][x_end] == ' '):
+    #         return "SEMIOPEN"
+    #     elif (y_end != length - 1 and board[y_end - length - 1][x_end]) == ' ' and (y_end != board_size and board[y_end + 1][x_end] == ' '):
+    #         return "OPEN"
+    #     elif (y_end != length - 1 and board[y_end - length - 1][x_end] == ' ') or (y_end != board_size and board[y_end + 1][x_end] == ' '):
+    #         return "SEMIOPEN"
+    #     else:
+    #         return "CLOSED"
+    # elif d_y == 1 and (d_x == 1 or d_x == -1):
+    #     if (y_end != length - 1 and x_end != length - 1 and board[y_end - length - 1][x_end - length - 1] == ' '):
+    #         return "SEMIOPEN"
+    #     elif (y_end != length - 1 and x_end != length - 1 and board[y_end - length - 1][x_end - length - 1] == ' ') and (y_end != board_size and x_end != board_size and board[y_end + 1][x_end + 1] == ' '):
+    #         return "OPEN"
+    #     elif (y_end != length - 1 and x_end != length - 1 and  board[y_end - length - 1][x_end - length - 1] == ' ') or (y_end != board_size and x_end != board_size and board[y_end + 1][x_end + 1] == ' '):
+    #         return "SEMIOPEN"
+    #     else:
+    #         return "CLOSED"
         
 def detect_row(board, col, y_start, x_start, length, d_y, d_x):
+    count = 0
     open_seq_count = 0
     semi_open_seq_count = 0
-    n = len(board)
-
     i = y_start
     j = x_start
     size = len(board)
     while 0 <= i < size and 0 <= j < size:
         if board[i][j] == col:
-            run += 1
+            count += 1
         else:
-            if run > 0:
-                end_y = i - d_y
-                end_x = j - d_x
-                if run == length:
-                    start_y = end_y - (length - 1) * d_y
-                    start_x = end_x - (length - 1) * d_x
-
-                    prev_y = start_y - d_y
-                    prev_x = start_x - d_x
-                    next_y = end_y + d_y
-                    next_x = end_x + d_x
-
-                    # if neighbours are the same colour, this run is part of a longer run -> skip
-                    prev_is_col = (0 <= prev_y < n and 0 <= prev_x < n and board[prev_y][prev_x] == col)
-                    next_is_col = (0 <= next_y < n and 0 <= next_x < n and board[next_y][next_x] == col)
-
-                    if not (prev_is_col or next_is_col):
-                        bound = is_bounded(board, end_y, end_x, length, d_y, d_x)
-                        if bound == "OPEN":
-                            open_seq_count += 1
-                        elif bound == "SEMIOPEN":
-                            semi_open_seq_count += 1
-                run = 0
-        i += d_y
-        j += d_x
-
-    # handle a run that reaches the end of the line
-    if run > 0:
-        end_y = i - d_y
-        end_x = j - d_x
-        if run == length:
-            start_y = end_y - (length - 1) * d_y
-            start_x = end_x - (length - 1) * d_x
-
-            prev_y = start_y - d_y
-            prev_x = start_x - d_x
-            next_y = end_y + d_y
-            next_x = end_x + d_x
-
-            prev_is_col = (0 <= prev_y < n and 0 <= prev_x < n and board[prev_y][prev_x] == col)
-            next_is_col = (0 <= next_y < n and 0 <= next_x < n and board[next_y][next_x] == col)
-
-            if not (prev_is_col or next_is_col):
-                bound = is_bounded(board, end_y, end_x, length, d_y, d_x)
+            # check if a sequence ends before
+            if count == length:
+                bound = is_bounded(board, i - d_y, j - d_x, length, d_y, d_x)
                 if bound == "OPEN":
                     open_seq_count += 1
                 elif bound == "SEMIOPEN":
                     semi_open_seq_count += 1
+            count = 0
+        
+        if not (0 <= i + d_y < size and 0 <= j + d_x < size):
+            if count == length:
+                bound = is_bounded(board, i, j, length, d_y, d_x)
+                if bound == "OPEN":
+                    open_seq_count += 1
+                elif bound == "SEMIOPEN":
+                    semi_open_seq_count += 1
+            break
 
+        i += d_y
+        j += d_x
+    
     return open_seq_count, semi_open_seq_count
     
     
 def detect_rows(board, col, length):
     open_seq_count, semi_open_seq_count = 0, 0
-    n = len(board)
-
-    # Case 1: Rows (left -> right)
-    for y_start in range(n):
-        c1, c2 = detect_row(board, col, y_start, 0, length, 0, 1)
-        open_seq_count += c1
-        semi_open_seq_count += c2
-
-    # Case 2: Columns (top -> bottom)
-    for x_start in range(n):
-        c1, c2 = detect_row(board, col, 0, x_start, length, 1, 0)
-        open_seq_count += c1
-        semi_open_seq_count += c2
-
-    # Case 3: Diagonals top-left -> bottom-right (1,1)
-    # Start at every column in top row
-    for x_start in range(n):
-        c1, c2 = detect_row(board, col, 0, x_start, length, 1, 1)
-        open_seq_count += c1
-        semi_open_seq_count += c2
-    # Start at every row in left column except top (to avoid duplicate)
-    for y_start in range(1, n):
-        c1, c2 = detect_row(board, col, y_start, 0, length, 1, 1)
-        open_seq_count += c1
-        semi_open_seq_count += c2
-
-    # Case 4: Anti-diagonals top-right -> bottom-left (1,-1)
-    # Start at every column in top row
-    for x_start in range(n):
-        c1, c2 = detect_row(board, col, 0, x_start, length, 1, -1)
-        open_seq_count += c1
-        semi_open_seq_count += c2
-    # Start at every row in right column except top (to avoid duplicate)
-    for y_start in range(1, n):
-        c1, c2 = detect_row(board, col, y_start, n - 1, length, 1, -1)
-        open_seq_count += c1
-        semi_open_seq_count += c2
-
+    size = len(board)
+    #Case 1: Every Row Left To Right (0, 1)
+    for y_start in range(size):
+        x_start = 0
+        count1, count2 = detect_row(board, col, y_start, x_start, length, 0, 1)
+        open_seq_count += count1
+        semi_open_seq_count += count2
+    #Case 2: Every Column Top To Bottom (1, 0)
+    for x_start in range(size):
+        y_start = 0
+        count1, count2 = detect_row(board, col, y_start, x_start, length, 1, 0)
+        open_seq_count += count1
+        semi_open_seq_count += count2
+    #Case 3: Every Diagonal From Top Left to Bottom Right (1, 1)
+    for x_start in range(size):
+        if(min(size, size - x_start) >= length):
+            count1, count2 = detect_row(board, col, 0, x_start, length, 1, 1)
+            open_seq_count += count1
+            semi_open_seq_count += count2
+    for y_start in range(1, size):
+        if (min(size - y_start, size) >= length):
+            count1, count2 = detect_row(board, col, y_start, 0, length, 1, 1)
+            open_seq_count += count1
+            semi_open_seq_count += count2
+    #Case 4: Every Diagonal From Top Right to Bottom Left (1, -1)
+    for x_start in range(size):
+        if (min(size, x_start + 1) >= length):
+            count1, count2 = detect_row(board, col, 0, x_start, length, 1, -1)
+            open_seq_count += count1
+            semi_open_seq_count += count2
+    for y_start in range(1, size):
+        if (min(size - y_start, size) >= length):
+            count1, count2 = detect_row(board, col, y_start, size - 1, length, 1, -1)
+            open_seq_count += count1
+            semi_open_seq_count += count2
     return open_seq_count, semi_open_seq_count
     
-def search_max(board):
-    move_y = 0
-    move_x = 0    
+def search_max(board):    
     best_score = 0
     move_y, move_x = None, None
     for y in range(len(board)):
@@ -475,4 +468,4 @@ if __name__ == '__main__':
     test_detect_rows()
     test_search_max()
     easy_testset_for_main_functions()
-    some_tests()    
+    some_tests()
