@@ -24,24 +24,33 @@ def is_empty(board):
 # length: The length of the sequence
 # (d_y, d_x): The Direction of the sequence
 def is_bounded(board, y_end, x_end, length, d_y, d_x):
-    n = len(board)
+    # Gets the side length of the board
+    board_size = len(board)
+    
+    # Calculate the start position correctly
     x_start = x_end - (length - 1) * d_x
     y_start = y_end - (length - 1) * d_y
-
-    before_y = y_start - d_y
-    before_x = x_start - d_x
-    after_y = y_end + d_y
-    after_x = x_end + d_x
-
-    before_in = 0 <= before_y < n and 0 <= before_x < n
-    after_in = 0 <= after_y < n and 0 <= after_x < n
-
-    before_empty = before_in and board[before_y][before_x] == ' '
-    after_empty = after_in and board[after_y][after_x] == ' '
-
-    if before_empty and after_empty:
+    
+    # Check the position before the start of the sequence
+    y_before = y_start - d_y
+    x_before = x_start - d_x
+    before_open = False
+    if 0 <= y_before < board_size and 0 <= x_before < board_size:
+        if board[y_before][x_before] == ' ':
+            before_open = True
+    
+    # Check the position after the end of the sequence
+    y_after = y_end + d_y
+    x_after = x_end + d_x
+    after_open = False
+    if 0 <= y_after < board_size and 0 <= x_after < board_size:
+        if board[y_after][x_after] == ' ':
+            after_open = True
+    
+    # Determine the type of sequence based on both ends
+    if before_open and after_open:
         return "OPEN"
-    elif before_empty or after_empty:
+    elif before_open or after_open:
         return "SEMIOPEN"
     else:
         return "CLOSED"
@@ -53,10 +62,8 @@ def detect_row(board, col, y_start, x_start, length, d_y, d_x):
 
     i = y_start
     j = x_start
-    run = 0
-
-    # walk the line and process runs when they terminate
-    while 0 <= i < n and 0 <= j < n:
+    size = len(board)
+    while 0 <= i < size and 0 <= j < size:
         if board[i][j] == col:
             run += 1
         else:
@@ -110,6 +117,7 @@ def detect_row(board, col, y_start, x_start, length, d_y, d_x):
                     semi_open_seq_count += 1
 
     return open_seq_count, semi_open_seq_count
+    
     
 def detect_rows(board, col, length):
     open_seq_count, semi_open_seq_count = 0, 0
@@ -461,4 +469,10 @@ def some_tests():
   
             
 if __name__ == '__main__':
-    print(play_gomoku(8))
+    test_is_empty()
+    test_is_bounded()
+    test_detect_row()
+    test_detect_rows()
+    test_search_max()
+    easy_testset_for_main_functions()
+    some_tests()    
