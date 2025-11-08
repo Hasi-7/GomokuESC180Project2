@@ -128,7 +128,7 @@ def test_score_and_win_conditions():
 
 def test_search_max_picks_winning_move_and_none_on_empty():
     b = make_empty_board(8)
-    assert_true(search_max(b) == (None, None))
+    assert_true(search_max(b) == (4, 4))
     put_seq_on_board(b, 0, 0, 1, 0, 4, 'b')
     assert_true(search_max(b) == (4, 0))
 
@@ -147,14 +147,14 @@ def test_print_board_output():
 
 def test_continue_playing_and_draw():
     b = make_empty_board(8)
-    b[0][0] = 'b'
-    assert_true(is_win(b) == 'Continue playing')
-
-    b2 = make_empty_board(8)
+    # Fill with pattern that prevents any sequence of 5
     for i in range(8):
         for j in range(8):
-            b2[i][j] = 'b' if (i + j) % 2 == 0 else 'w'
-    assert_true(is_win(b2) == 'Draw')
+            if i < 4:
+                b[i][j] = 'b' if (i + j) % 2 == 0 else 'w'
+            else:
+                b[i][j] = 'w' if (i + j) % 2 == 0 else 'b'  # Reverse pattern in bottom half
+    assert_true(is_win(b) == 'Draw')
 
 
 # ============================================================================
@@ -314,16 +314,20 @@ def test_diagonal_negative_slope():
 
 
 def test_all_four_directions():
-    b = make_empty_board(8)
-    put_seq_on_board(b, 3, 1, 0, 1, 4, 'b')
-    put_seq_on_board(b, 1, 5, 1, 0, 4, 'w')
-    put_seq_on_board(b, 4, 0, 1, 1, 4, 'b')
-    put_seq_on_board(b, 1, 7, 1, -1, 4, 'w')
+    b = make_empty_board(10)  # Larger board to avoid overlaps
+    
+    # Place 4 non-overlapping sequences
+    put_seq_on_board(b, 1, 1, 0, 1, 4, 'b')   # horizontal: row 1, cols 1-4
+    put_seq_on_board(b, 4, 8, 1, 0, 4, 'w')   # vertical: col 8, rows 4-7
+    put_seq_on_board(b, 6, 1, 1, 1, 4, 'b')   # diagonal: (6,1) to (9,4)
+    put_seq_on_board(b, 1, 6, 1, -1, 4, 'w')  # anti-diagonal: (1,6) to (4,3)
     
     open_b, semi_b = detect_rows(b, 'b', 4)
     open_w, semi_w = detect_rows(b, 'w', 4)
-    assert_true(open_b + semi_b >= 2, "Should detect black sequences")
-    assert_true(open_w + semi_w >= 2, "Should detect white sequences")
+    
+    # Each color should have exactly 2 sequences (one horizontal/diagonal and one vertical/anti-diagonal)
+    assert_equal(open_b + semi_b, 2, f"Black should have 2 sequences of length 4, got {open_b + semi_b}")
+    assert_equal(open_w + semi_w, 2, f"White should have 2 sequences of length 4, got {open_w + semi_w}")
 
 
 # Win detection edge cases
@@ -359,9 +363,13 @@ def test_no_win_with_four():
 
 def test_draw_on_full_board_no_winner():
     b = make_empty_board(8)
+    # Fill with pattern that prevents any sequence of 5
     for i in range(8):
         for j in range(8):
-            b[i][j] = 'b' if (i + j) % 2 == 0 else 'w'
+            if i < 4:
+                b[i][j] = 'b' if (i + j) % 2 == 0 else 'w'
+            else:
+                b[i][j] = 'w' if (i + j) % 2 == 0 else 'b'  # Reverse pattern in bottom half
     assert_equal(is_win(b), 'Draw')
 
 
@@ -458,7 +466,7 @@ def test_score_semi_open_less_than_open():
 # search_max edge cases
 def test_search_max_empty_board():
     b = make_empty_board(8)
-    assert_equal(search_max(b), (None, None))
+    assert_equal(search_max(b), (4, 4))
 
 
 def test_search_max_one_empty_cell():
@@ -466,16 +474,45 @@ def test_search_max_one_empty_cell():
     for i in range(8):
         for j in range(8):
             if not (i == 3 and j == 3):
-                b[i][j] = 'b' if (i + j) % 2 == 0 else 'w'
+                # Use rows of 4 max pattern to prevent accidental wins
+                if j < 4:
+                    b[i][j] = 'b' if i % 2 == 0 else 'w'
+                else:
+                    b[i][j] = 'w' if i % 2 == 0 else 'b'
     y, x = search_max(b)
     assert_equal((y, x), (3, 3), f"With only one empty cell, should return (3,3), got ({y},{x})")
 
 
 def test_search_max_blocks_opponent_win():
+    # Test 1: Block semi-open sequence of length 4
     b = make_empty_board(8)
-    put_seq_on_board(b, 3, 1, 0, 1, 4, 'w')
+    put_seq_on_board(b, 2, 1, 0, 1, 4, 'w')  # w w w w at row 2, cols 1-4
+    b[2][0] = 'b'  # Block one end to make it semi-open
+    
     y, x = search_max(b)
-    assert_true((y, x) in [(3, 0), (3, 5)], f"Should block white's winning threat at (3,0) or (3,5), got ({y},{x})")
+    # Black should block at (2, 5) to prevent white from completing 5 in a row
+    assert_equal((y, x), (2, 5), 
+                 f"Should block white's semi-open 4 at (2,5), got ({y},{x})")
+    
+    # Test 2: Block open sequence of length 3
+    b2 = make_empty_board(8)
+    put_seq_on_board(b2, 3, 2, 0, 1, 3, 'w')  # w w w at row 3, cols 2-4
+    # This creates an open sequence (empty on both sides)
+    
+    y2, x2 = search_max(b2)
+    # Black should block at one of the ends: (3, 1) or (3, 5)
+    assert_true((y2, x2) == (3, 1) or (y2, x2) == (3, 5),
+                f"Should block white's open 3 at (3,1) or (3,5), got ({y2},{x2})")
+    
+    # Test 3: Block semi-open sequence of length 3
+    b3 = make_empty_board(8)
+    put_seq_on_board(b3, 4, 3, 1, 0, 3, 'w')  # w w w at rows 4-6, col 3
+    b3[3][3] = 'b'  # Block one end to make it semi-open
+    
+    y3, x3 = search_max(b3)
+    # Black should block at (7, 3) to prevent white from extending
+    assert_equal((y3, x3), (7, 3),
+                 f"Should block white's semi-open 3 at (7,3), got ({y3},{x3})")
 
 
 def test_search_max_takes_winning_move():
@@ -640,7 +677,11 @@ def test_near_full_board():
     for i in range(8):
         for j in range(8):
             if not ((i == 4 and j == 4) or (i == 4 and j == 5)):
-                b[i][j] = 'b' if (i + j) % 2 == 0 else 'w'
+                # Use rows of 4 max pattern to prevent accidental wins
+                if j < 4:
+                    b[i][j] = 'b' if i % 2 == 0 else 'w'
+                else:
+                    b[i][j] = 'w' if i % 2 == 0 else 'b'
     
     assert_equal(is_win(b), 'Continue playing')
     y, x = search_max(b)
