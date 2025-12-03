@@ -157,11 +157,11 @@ def detect_rows(board, col, length):
     return open_seq_count, semi_open_seq_count
     
 def search_max(board):    
-    best_score = 0
+    best_score = float('-inf')
     move_y, move_x = None, None
     for y in range(len(board)):
         for x in range(len(board[0])):
-            if board[y][x] == ' ': # Try empty cells only''
+            if board[y][x] == ' ': # Try empty cells only
                 board[y][x] = 'b'
                 current_score = score(board)
                 board[y][x] = ' ' # Removes the move
@@ -462,10 +462,11 @@ def some_tests():
   
             
 if __name__ == '__main__':
-    test_is_empty()
-    test_is_bounded()
-    test_detect_row()
-    test_detect_rows()
-    test_search_max()
-    easy_testset_for_main_functions()
-    some_tests()
+    play_gomoku(8)
+    # test_is_empty()
+    # test_is_bounded()
+    # test_detect_row()
+    # test_detect_rows()
+    # test_search_max()
+    # easy_testset_for_main_functions()
+    # some_tests()

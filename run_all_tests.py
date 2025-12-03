@@ -636,12 +636,21 @@ def test_fork_attack():
 
 
 def test_near_full_board():
+    """Test board that is nearly full but has no winner and continues playing.
+    
+    Uses blocks of 4 alternating colors to ensure no sequence of exactly 5 can form.
+    This creates a clear scenario where the board is almost full but game continues.
+    """
     b = make_empty_board(8)
     for i in range(8):
         for j in range(8):
             if not ((i == 4 and j == 4) or (i == 4 and j == 5)):
-                b[i][j] = 'b' if (i + j) % 2 == 0 else 'w'
+                # Create blocks of 4, alternating between b and w
+                # This ensures no run of exactly 5 in any direction
+                block_num = (i // 4) * 2 + (j // 4)
+                b[i][j] = 'b' if block_num % 2 == 0 else 'w'
     
+    # No sequences of exactly 5 possible with this pattern
     assert_equal(is_win(b), 'Continue playing')
     y, x = search_max(b)
     assert_true((y, x) in [(4, 4), (4, 5)], f"Should suggest one of two empty cells, got ({y},{x})")
