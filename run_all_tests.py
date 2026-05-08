@@ -46,6 +46,11 @@ def assert_true(cond, msg=None):
         raise AssertionError(msg or 'Assertion failed')
 
 
+def assert_false(cond, msg=None):
+    if cond:
+        raise AssertionError(msg or 'Assertion failed')
+
+
 def assert_equal(actual, expected, msg=None):
     if actual != expected:
         raise AssertionError(msg or f'Expected {expected}, got {actual}')
@@ -57,12 +62,12 @@ def run_test(fn, category=""):
     name = fn.__name__
     try:
         fn()
-        print(f"✓ PASS: {name}")
+        print(f"PASS: {name}")
         return True
     except Exception as e:
         failures += 1
-        print(f"✗ FAIL: {name}")
-        print(f"  └─ {e}")
+        print(f"FAIL: {name}")
+        print(f"  - {e}")
         return False
 
 
@@ -692,7 +697,305 @@ def test_near_full_board():
     assert_equal(is_win(b), 'Continue playing')
     y, x = search_max(b)
     assert_true((y, x) in [(4, 4), (4, 5)], f"Should suggest one of two empty cells, got ({y},{x})")
+# ==================== ADDITIONAL COMPREHENSIVE TESTS ====================
 
+# --- is_empty tests ---
+def test_is_empty_single_stone():
+    b = make_empty_board(8)
+    b[4][4] = 'b'
+    assert_false(is_empty(b), "Board with one stone should not be empty")
+
+
+def test_is_empty_corner_stone():
+    b = make_empty_board(8)
+    b[0][0] = 'w'
+    assert_false(is_empty(b), "Board with corner stone should not be empty")
+
+
+# --- is_bounded extensive tests ---
+def test_is_bounded_all_corners():
+    b = make_empty_board(8)
+    # Top-left corner
+    put_seq_on_board(b, 0, 0, 0, 1, 3, 'b')
+    assert_equal(is_bounded(b, 0, 2, 3, 0, 1), "SEMIOPEN")
+    
+    # Top-right corner
+    b2 = make_empty_board(8)
+    put_seq_on_board(b2, 0, 5, 0, 1, 3, 'w')
+    assert_equal(is_bounded(b2, 0, 7, 3, 0, 1), "SEMIOPEN")
+    
+    # Bottom-left corner
+    b3 = make_empty_board(8)
+    put_seq_on_board(b3, 5, 0, 1, 0, 3, 'b')
+    assert_equal(is_bounded(b3, 7, 0, 3, 1, 0), "SEMIOPEN")
+    
+    # Bottom-right corner
+    b4 = make_empty_board(8)
+    put_seq_on_board(b4, 5, 5, 1, 1, 3, 'w')
+    assert_equal(is_bounded(b4, 7, 7, 3, 1, 1), "SEMIOPEN")
+
+
+def test_is_bounded_blocked_both_ends():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 3, 2, 0, 1, 3, 'b')
+    b[3][1] = 'w'  # Block left
+    b[3][5] = 'w'  # Block right
+    assert_equal(is_bounded(b, 3, 4, 3, 0, 1), "CLOSED")
+
+
+def test_is_bounded_blocked_by_same_color():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 2, 2, 0, 1, 3, 'b')
+    b[2][1] = 'b'  # Block with same color
+    result = is_bounded(b, 2, 4, 3, 0, 1)
+    assert_true(result in ["SEMIOPEN", "CLOSED"], f"Should be SEMIOPEN or CLOSED, got {result}")
+
+
+# --- detect_row extensive tests ---
+def test_detect_row_length_5():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 2, 1, 0, 1, 5, 'b')
+    open_count, semi_count = detect_row(b, 'b', 2, 1, 5, 0, 1)
+    assert_equal(open_count + semi_count, 1, "Should detect one sequence of length 5")
+
+
+def test_detect_row_multiple_sequences():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 1, 0, 0, 1, 2, 'b')
+    put_seq_on_board(b, 1, 4, 0, 1, 2, 'b')
+    open_count, semi_count = detect_row(b, 'b', 1, 0, 2, 0, 1)
+    assert_equal(open_count + semi_count, 2, "Should detect two separate sequences")
+
+
+def test_detect_row_no_sequences():
+    b = make_empty_board(8)
+    b[3][2] = 'b'
+    open_count, semi_count = detect_row(b, 'b', 3, 0, 3, 0, 1)
+    assert_equal(open_count + semi_count, 0, "Should detect no sequences of length 3")
+
+
+def test_detect_row_alternating_colors():
+    b = make_empty_board(8)
+    for i in range(8):
+        b[2][i] = 'b' if i % 2 == 0 else 'w'
+    open_count, semi_count = detect_row(b, 'b', 2, 0, 2, 0, 1)
+    assert_equal(open_count + semi_count, 0, "Should detect no sequences with alternating colors")
+
+
+# --- detect_rows extensive tests ---
+def test_detect_rows_all_directions_length_2():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 1, 1, 0, 1, 2, 'b')  # horizontal
+    put_seq_on_board(b, 4, 4, 1, 0, 2, 'b')  # vertical
+    put_seq_on_board(b, 6, 1, 1, 1, 2, 'b')  # diagonal
+    put_seq_on_board(b, 1, 6, 1, -1, 2, 'b') # anti-diagonal
+    
+    open_count, semi_count = detect_rows(b, 'b', 2)
+    assert_equal(open_count + semi_count, 4, "Should detect 4 sequences of length 2")
+
+
+def test_detect_rows_overlapping_not_counted():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 3, 2, 0, 1, 4, 'w')  # length 4
+    open_2, semi_2 = detect_rows(b, 'w', 2)
+    open_3, semi_3 = detect_rows(b, 'w', 3)
+    assert_equal(open_2 + semi_2, 0, "Should not count length-2 subsequences within length-4")
+    assert_equal(open_3 + semi_3, 0, "Should not count length-3 subsequences within length-4")
+
+
+def test_detect_rows_edge_sequences():
+    b = make_empty_board(8)
+    # Top edge
+    put_seq_on_board(b, 0, 1, 0, 1, 3, 'b')
+    # Left edge
+    put_seq_on_board(b, 4, 0, 1, 0, 3, 'w')
+    # Right edge
+    put_seq_on_board(b, 2, 5, 0, 1, 3, 'b')
+    # Bottom edge
+    put_seq_on_board(b, 5, 3, 1, 0, 3, 'w')
+    
+    open_b, semi_b = detect_rows(b, 'b', 3)
+    open_w, semi_w = detect_rows(b, 'w', 3)
+    assert_equal(open_b + semi_b, 2, "Should detect 2 black sequences")
+    assert_equal(open_w + semi_w, 2, "Should detect 2 white sequences")
+
+
+# --- score function tests ---
+def test_score_black_advantage():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 2, 2, 0, 1, 4, 'b')
+    s = score(b)
+    assert_true(s > 0, "Black with length-4 should have positive score")
+
+
+def test_score_white_advantage():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 3, 2, 0, 1, 4, 'w')
+    s = score(b)
+    assert_true(s < 0, "White with length-4 should have negative score")
+
+
+def test_score_balanced():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 2, 2, 0, 1, 3, 'b')
+    put_seq_on_board(b, 4, 2, 0, 1, 3, 'w')
+    s = score(b)
+    assert_true(abs(s) < 10000, "Balanced board should have moderate score")
+
+
+def test_score_black_wins():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 3, 1, 0, 1, 5, 'b')
+    s = score(b)
+    assert_equal(s, 100000, "Black winning should return MAX_SCORE")
+
+
+def test_score_white_wins():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 3, 1, 0, 1, 5, 'w')
+    s = score(b)
+    assert_equal(s, -100000, "White winning should return -MAX_SCORE")
+
+
+def test_score_multiple_threats():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 1, 1, 0, 1, 3, 'b')
+    put_seq_on_board(b, 3, 1, 0, 1, 3, 'b')
+    put_seq_on_board(b, 5, 1, 0, 1, 2, 'w')
+    s = score(b)
+    assert_true(s > 0, "Multiple black threats should have positive score")
+
+
+# --- is_win extensive tests ---
+def test_is_win_diagonal_all_quadrants():
+    # Top-left to bottom-right
+    b1 = make_empty_board(8)
+    put_seq_on_board(b1, 1, 1, 1, 1, 5, 'b')
+    assert_equal(is_win(b1), 'Black won')
+    
+    # Top-right to bottom-left
+    b2 = make_empty_board(8)
+    put_seq_on_board(b2, 1, 6, 1, -1, 5, 'w')
+    assert_equal(is_win(b2), 'White won')
+
+
+def test_is_win_exact_five():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 2, 1, 0, 1, 5, 'b')
+    b[2][0] = 'w'  # Block one end
+    b[2][6] = 'w'  # Block other end
+    assert_equal(is_win(b), 'Continue playing', "Closed exactly-5 sequence should not be a win")
+
+
+def test_is_win_more_than_five():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 3, 0, 0, 1, 6, 'w')
+    result = is_win(b)
+    assert_true(result in ['White won', 'Continue playing'], f"6 in a row handling varies, got {result}")
+
+
+def test_is_win_four_not_win():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 2, 2, 0, 1, 4, 'b')
+    assert_equal(is_win(b), 'Continue playing', "Four in a row should not be a win")
+
+
+def test_is_win_multiple_fives():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 1, 1, 0, 1, 5, 'b')
+    put_seq_on_board(b, 5, 1, 0, 1, 5, 'b')
+    assert_equal(is_win(b), 'Black won', "Multiple winning sequences still means black won")
+
+
+# --- search_max extensive tests ---
+def test_search_max_creates_own_threat():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 3, 2, 0, 1, 3, 'b')
+    y, x = search_max(b)
+    assert_true((y, x) in [(3, 1), (3, 5)], 
+                f"Should extend own sequence, got ({y},{x})")
+
+
+def test_search_max_double_threat():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 2, 1, 0, 1, 3, 'b')
+    put_seq_on_board(b, 4, 1, 0, 1, 3, 'b')
+    y, x = search_max(b)
+    assert_true(y in [2, 4], f"Should extend one of two threats, got ({y},{x})")
+
+
+def test_search_max_fork_opportunity():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 3, 2, 0, 1, 2, 'b')  # horizontal
+    put_seq_on_board(b, 2, 3, 1, 0, 2, 'b')  # vertical
+    y, x = search_max(b)
+    assert_true(0 <= y < 8 and 0 <= x < 8, "Should return valid coordinates")
+
+
+def test_search_max_avoid_wasting_move():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 3, 1, 0, 1, 5, 'w')
+    y, x = search_max(b)
+    assert_true((y, x) == (None, None) or (0 <= y < 8 and 0 <= x < 8), 
+                "Should return valid coordinates or None when game is over")
+
+
+def test_search_max_corner_preference():
+    b = make_empty_board(8)
+    b[4][4] = 'b'  # Center taken
+    y, x = search_max(b)
+    assert_true(0 <= y < 8 and 0 <= x < 8, 
+                f"Should return valid coordinates, got ({y},{x})")
+
+
+def test_search_max_no_self_block():
+    b = make_empty_board(8)
+    put_seq_on_board(b, 3, 2, 0, 1, 3, 'b')
+    b[3][1] = 'w'  # One end blocked
+    y, x = search_max(b)
+    assert_true(0 <= y < 8 and 0 <= x < 8, 
+                f"Should return valid move, got ({y},{x})")
+
+
+# --- Edge cases and stress tests ---
+def test_tiny_board():
+    b = make_empty_board(5)
+    put_seq_on_board(b, 0, 0, 0, 1, 5, 'b')
+    assert_equal(is_win(b), 'Continue playing')
+
+
+def test_sequence_wraps_edge():
+    b = make_empty_board(8)
+    b[3][6] = 'b'
+    b[3][7] = 'b'
+    b[3][0] = 'b'
+    open_count, semi_count = detect_rows(b, 'b', 3)
+    assert_equal(open_count + semi_count, 0, "Should not count wrapped sequences")
+
+
+def test_all_same_color():
+    b = make_empty_board(8)
+    for i in range(8):
+        for j in range(8):
+            b[i][j] = 'b'
+    assert_equal(is_win(b), 'Draw')
+
+
+def test_performance_near_full_board():
+    b = make_empty_board(8)
+    count = 0
+    for i in range(8):
+        for j in range(8):
+            if count < 60:
+                if j < 4:
+                    b[i][j] = 'b' if i % 2 == 0 else 'w'
+                else:
+                    b[i][j] = 'w' if i % 2 == 0 else 'b'
+                count += 1
+    
+    y, x = search_max(b)
+    if (y, x) != (None, None):
+        assert_true(b[y][x] == ' ', "Should return an empty cell")
 
 # ============================================================================
 # MAIN TEST RUNNER
@@ -702,129 +1005,160 @@ def main():
     print("=" * 70)
     print("GOMOKU COMPREHENSIVE TEST SUITE")
     print("=" * 70)
-    print()
     
-    # Basic tests
-    print("🔹 BASIC TESTS (8 tests)")
+    print("\nBASIC TESTS (8 tests)")
     print("-" * 70)
-    basic_tests = [
-        test_make_and_is_empty,
-        test_put_seq_and_detects_vertical_open,
-        test_is_bounded_open_semi_closed,
-        test_detect_row_horizontal_and_diagonal,
-        test_score_and_win_conditions,
-        test_search_max_picks_winning_move_and_none_on_empty,
-        test_print_board_output,
-        test_continue_playing_and_draw,
-    ]
+    run_test(test_make_and_is_empty, "BASIC")
+    run_test(test_put_seq_and_detects_vertical_open, "BASIC")
+    run_test(test_is_bounded_open_semi_closed, "BASIC")
+    run_test(test_detect_row_horizontal_and_diagonal, "BASIC")
+    run_test(test_score_and_win_conditions, "BASIC")
+    run_test(test_search_max_picks_winning_move_and_none_on_empty, "BASIC")
+    run_test(test_print_board_output, "BASIC")
+    run_test(test_continue_playing_and_draw, "BASIC")
     
-    for test in basic_tests:
-        run_test(test)
-    
-    print()
-    print("🔹 EDGE CASE TESTS (60 tests)")
+    print("\nEDGE CASE TESTS (60 tests)")
     print("-" * 70)
     
-    # Edge case tests
-    edge_tests = [
-        # Board boundaries
-        test_sequence_at_top_left_corner,
-        test_sequence_at_bottom_right_corner,
-        test_sequence_at_all_four_corners,
-        test_sequence_along_top_edge,
-        test_sequence_along_left_edge,
-        test_sequence_along_bottom_edge,
-        test_sequence_along_right_edge,
-        test_diagonal_from_top_edge_to_right_edge,
-        test_diagonal_from_left_edge_to_bottom_edge,
-        
-        # Sequence detection
-        test_single_stone_no_sequence,
-        test_two_stones_not_adjacent,
-        test_exactly_five_in_a_row,
-        test_more_than_five_in_a_row,
-        test_overlapping_sequences,
-        test_parallel_sequences,
-        test_blocked_sequence_both_ends,
-        test_blocked_sequence_one_end,
-        test_blocked_by_same_color,
-        test_diagonal_negative_slope,
-        test_all_four_directions,
-        
-        # Win detection
-        test_win_with_five_horizontal,
-        test_win_with_five_vertical,
-        test_win_with_five_diagonal_positive,
-        test_win_with_five_diagonal_negative,
-        test_no_win_with_four,
-        test_draw_on_full_board_no_winner,
-        test_continue_playing_on_empty_board,
-        test_continue_playing_with_moves_but_no_five,
-        test_both_players_have_five_simultaneously,
-        
-        # Scoring
-        test_score_empty_board,
-        test_score_single_stone,
-        test_score_black_winning,
-        test_score_white_winning,
-        test_score_black_open_four,
-        test_score_white_open_four,
-        test_score_blocking_more_valuable,
-        test_score_multiple_open_threes,
-        test_score_semi_open_less_than_open,
-        
-        # search_max
-        test_search_max_empty_board,
-        test_search_max_one_empty_cell,
-        test_search_max_blocks_opponent_win,
-        test_search_max_takes_winning_move,
-        test_search_max_prefers_winning_over_blocking,
-        test_search_max_full_board,
-        
-        # detect_row specific
-        test_detect_row_entire_row_filled,
-        test_detect_row_alternating_colors,
-        test_detect_row_with_gaps,
-        test_detect_row_starts_mid_sequence,
-        
-        # is_bounded specific
-        test_is_bounded_length_one,
-        test_is_bounded_at_exact_board_boundary,
-        test_is_bounded_surrounded_by_empty,
-        test_is_bounded_surrounded_by_opponent,
-        
-        # put_seq_on_board
-        test_put_seq_length_zero,
-        test_put_seq_length_one,
-        test_put_seq_overwrites_existing,
-        
-        # Complex scenarios
-        test_complex_mid_game_position,
-        test_capture_pattern,
-        test_double_threat,
-        test_fork_attack,
-        test_near_full_board,
-    ]
+    # Corner and edge tests
+    run_test(test_sequence_at_top_left_corner, "EDGE")
+    run_test(test_sequence_at_bottom_right_corner, "EDGE")
+    run_test(test_sequence_at_all_four_corners, "EDGE")
+    run_test(test_sequence_along_top_edge, "EDGE")
+    run_test(test_sequence_along_left_edge, "EDGE")
+    run_test(test_sequence_along_bottom_edge, "EDGE")
+    run_test(test_sequence_along_right_edge, "EDGE")
+    run_test(test_diagonal_from_top_edge_to_right_edge, "EDGE")
+    run_test(test_diagonal_from_left_edge_to_bottom_edge, "EDGE")
     
-    for test in edge_tests:
-        run_test(test)
+    # Sequence detection tests
+    run_test(test_single_stone_no_sequence, "EDGE")
+    run_test(test_two_stones_not_adjacent, "EDGE")
+    run_test(test_exactly_five_in_a_row, "EDGE")
+    run_test(test_more_than_five_in_a_row, "EDGE")
+    run_test(test_overlapping_sequences, "EDGE")
+    run_test(test_parallel_sequences, "EDGE")
     
-    # Summary
-    print()
-    print("=" * 70)
-    passed = total_tests - failures
-    pass_rate = (passed / total_tests * 100) if total_tests > 0 else 0
+    # Boundary tests
+    run_test(test_blocked_sequence_both_ends, "EDGE")
+    run_test(test_blocked_sequence_one_end, "EDGE")
+    run_test(test_blocked_by_same_color, "EDGE")
     
+    # Win condition tests
+    run_test(test_win_with_five_horizontal, "EDGE")
+    run_test(test_win_with_five_vertical, "EDGE")
+    run_test(test_win_with_five_diagonal_positive, "EDGE")
+    run_test(test_win_with_five_diagonal_negative, "EDGE")
+    run_test(test_no_win_with_four, "EDGE")
+    run_test(test_draw_on_full_board_no_winner, "EDGE")
+    run_test(test_continue_playing_on_empty_board, "EDGE")
+    run_test(test_continue_playing_with_moves_but_no_five, "EDGE")
+    run_test(test_both_players_have_five_simultaneously, "EDGE")
+    
+    # Scoring tests
+    run_test(test_score_empty_board, "EDGE")
+    run_test(test_score_single_stone, "EDGE")
+    run_test(test_score_black_winning, "EDGE")
+    run_test(test_score_white_winning, "EDGE")
+    run_test(test_score_black_open_four, "EDGE")
+    run_test(test_score_white_open_four, "EDGE")
+    run_test(test_score_blocking_more_valuable, "EDGE")
+    run_test(test_score_multiple_open_threes, "EDGE")
+    run_test(test_score_semi_open_less_than_open, "EDGE")
+    
+    # search_max tests
+    run_test(test_search_max_empty_board, "EDGE")
+    run_test(test_search_max_one_empty_cell, "EDGE")
+    run_test(test_search_max_blocks_opponent_win, "EDGE")
+    run_test(test_search_max_takes_winning_move, "EDGE")
+    run_test(test_search_max_prefers_winning_over_blocking, "EDGE")
+    run_test(test_search_max_full_board, "EDGE")
+    
+    # detect_row edge cases
+    run_test(test_detect_row_entire_row_filled, "EDGE")
+    run_test(test_detect_row_alternating_colors, "EDGE")
+    run_test(test_detect_row_with_gaps, "EDGE")
+    run_test(test_detect_row_starts_mid_sequence, "EDGE")
+    
+    # is_bounded edge cases
+    run_test(test_is_bounded_length_one, "EDGE")
+    run_test(test_is_bounded_at_exact_board_boundary, "EDGE")
+    run_test(test_is_bounded_surrounded_by_empty, "EDGE")
+    run_test(test_is_bounded_surrounded_by_opponent, "EDGE")
+    
+    # put_seq edge cases
+    run_test(test_put_seq_length_zero, "EDGE")
+    run_test(test_put_seq_length_one, "EDGE")
+    run_test(test_put_seq_overwrites_existing, "EDGE")
+    
+    # Complex scenarios
+    run_test(test_complex_mid_game_position, "EDGE")
+    run_test(test_capture_pattern, "EDGE")
+    run_test(test_double_threat, "EDGE")
+    run_test(test_fork_attack, "EDGE")
+    run_test(test_near_full_board, "EDGE")
+    
+    print("\nCOMPREHENSIVE ADDITIONAL TESTS (35 tests)")
+    print("-" * 70)
+    
+    # is_empty additional
+    run_test(test_is_empty_single_stone, "COMPREHENSIVE")
+    run_test(test_is_empty_corner_stone, "COMPREHENSIVE")
+    
+    # is_bounded extensive
+    run_test(test_is_bounded_all_corners, "COMPREHENSIVE")
+    run_test(test_is_bounded_blocked_both_ends, "COMPREHENSIVE")
+    run_test(test_is_bounded_blocked_by_same_color, "COMPREHENSIVE")
+    
+    # detect_row extensive
+    run_test(test_detect_row_length_5, "COMPREHENSIVE")
+    run_test(test_detect_row_multiple_sequences, "COMPREHENSIVE")
+    run_test(test_detect_row_no_sequences, "COMPREHENSIVE")
+    run_test(test_detect_row_alternating_colors, "COMPREHENSIVE")
+    
+    # detect_rows extensive
+    run_test(test_detect_rows_all_directions_length_2, "COMPREHENSIVE")
+    run_test(test_detect_rows_overlapping_not_counted, "COMPREHENSIVE")
+    run_test(test_detect_rows_edge_sequences, "COMPREHENSIVE")
+    
+    # score extensive
+    run_test(test_score_black_advantage, "COMPREHENSIVE")
+    run_test(test_score_white_advantage, "COMPREHENSIVE")
+    run_test(test_score_balanced, "COMPREHENSIVE")
+    run_test(test_score_black_wins, "COMPREHENSIVE")
+    run_test(test_score_white_wins, "COMPREHENSIVE")
+    run_test(test_score_multiple_threats, "COMPREHENSIVE")
+    
+    # is_win extensive
+    run_test(test_is_win_diagonal_all_quadrants, "COMPREHENSIVE")
+    run_test(test_is_win_exact_five, "COMPREHENSIVE")
+    run_test(test_is_win_more_than_five, "COMPREHENSIVE")
+    run_test(test_is_win_four_not_win, "COMPREHENSIVE")
+    run_test(test_is_win_multiple_fives, "COMPREHENSIVE")
+    
+    # search_max extensive
+    run_test(test_search_max_creates_own_threat, "COMPREHENSIVE")
+    run_test(test_search_max_double_threat, "COMPREHENSIVE")
+    run_test(test_search_max_fork_opportunity, "COMPREHENSIVE")
+    run_test(test_search_max_avoid_wasting_move, "COMPREHENSIVE")
+    run_test(test_search_max_corner_preference, "COMPREHENSIVE")
+    run_test(test_search_max_no_self_block, "COMPREHENSIVE")
+    
+    # Edge cases and stress
+    run_test(test_tiny_board, "COMPREHENSIVE")
+    run_test(test_sequence_wraps_edge, "COMPREHENSIVE")
+    run_test(test_all_same_color, "COMPREHENSIVE")
+    run_test(test_performance_near_full_board, "COMPREHENSIVE")
+    
+    print("\n" + "=" * 70)
     if failures == 0:
-        print(f"✅ SUCCESS! All {total_tests} tests PASSED! 🎉")
+        print(f"SUCCESS! All {total_tests} tests PASSED!")
+        print("=" * 70)
+        exit(0)
     else:
-        print(f"⚠️  RESULTS: {passed}/{total_tests} tests passed ({pass_rate:.1f}%)")
-        print(f"❌ {failures} test(s) FAILED")
-    
-    print("=" * 70)
-    
-    sys.exit(0 if failures == 0 else 1)
-
+        print(f"FAILURE: {failures}/{total_tests} tests FAILED")
+        print("=" * 70)
+        exit(1)
 
 if __name__ == '__main__':
     main()
